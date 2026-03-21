@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const axios = require('axios');
 const OpenAI = require('openai');
 
 dotenv.config();
@@ -112,10 +113,39 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
       });
     }
 
+    // ── Step 3: SerpApi — find secondhand products for each suggestion ──
+    const suggestionsWithProducts = await Promise.all(
+      suggestions.map(async (suggestion) => {
+        try {
+          const query = `${suggestion.item} ${suggestion.color} secondhand`;
+          const serpResponse = await axios.get('https://serpapi.com/search.json', {
+            params: {
+              engine: 'google_shopping',
+              q: query,
+              api_key: process.env.SERPAPI_KEY,
+            },
+          });
+
+          const shoppingResults = (serpResponse.data.shopping_results || []).slice(0, 2);
+          const products = shoppingResults.map((result) => ({
+            title: result.title,
+            price: result.price,
+            link: result.link,
+            thumbnail: result.thumbnail,
+          }));
+
+          return { ...suggestion, products };
+        } catch (serpErr) {
+          console.error(`SerpApi error for "${suggestion.item}":`, serpErr.message);
+          return { ...suggestion, products: [] };
+        }
+      })
+    );
+
     // Return combined response
     res.json({
       analysis: clothingDetails,
-      suggestions,
+      suggestions: suggestionsWithProducts,
     });
   } catch (err) {
     console.error('Error in /api/outfit:', err);
