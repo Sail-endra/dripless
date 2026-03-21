@@ -124,7 +124,7 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
           const products = shoppingResults.map((result) => ({
             title: result.title,
             price: result.price,
-            link: result.link,
+            link: result.link || result.product_link || result.url || `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(suggestion.item)}`,
             thumbnail: result.thumbnail,
           }));
 
