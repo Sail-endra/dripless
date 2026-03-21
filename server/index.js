@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const axios = require('axios');
 const OpenAI = require('openai');
 
 dotenv.config();
@@ -113,20 +112,15 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
       });
     }
 
-    // ── Step 3: SerpApi — find secondhand products for each suggestion ──
+    // ── Step 3: SearchApi — find secondhand products for each suggestion ──
     const suggestionsWithProducts = await Promise.all(
       suggestions.map(async (suggestion) => {
         try {
-          const query = `${suggestion.item} ${suggestion.color} secondhand`;
-          const serpResponse = await axios.get('https://serpapi.com/search.json', {
-            params: {
-              engine: 'google_shopping',
-              q: query,
-              api_key: process.env.SERPAPI_KEY,
-            },
-          });
+          const searchUrl = `https://www.searchapi.io/api/v1/search?engine=google_shopping&q=${encodeURIComponent(suggestion.item + ' secondhand')}&api_key=${process.env.SEARCHAPI_KEY}`;
+          const serpResponse = await fetch(searchUrl);
+          const serpData = await serpResponse.json();
 
-          const shoppingResults = (serpResponse.data.shopping_results || []).slice(0, 2);
+          const shoppingResults = (serpData.shopping_results || []).slice(0, 2);
           const products = shoppingResults.map((result) => ({
             title: result.title,
             price: result.price,
@@ -136,7 +130,7 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
 
           return { ...suggestion, products };
         } catch (serpErr) {
-          console.error(`SerpApi error for "${suggestion.item}":`, serpErr.message);
+          console.error(`SerpApi error for "${suggestion.item}":`, serpErr);
           return { ...suggestion, products: [] };
         }
       })
