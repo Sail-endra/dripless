@@ -41,18 +41,18 @@ export default function CameraCapture({ onImageCapture }: { onImageCapture: (bas
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto mt-4">
-        <label className="flex-1 cursor-pointer group">
-            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
-            <div className="flex flex-col items-center justify-center py-6 px-4 bg-zinc-900 text-white rounded-2xl hover:bg-zinc-800 transition-all active:scale-95 shadow-lg relative overflow-hidden">
+        <label className="flex-1 group relative block">
+            <input type="file" accept="image/*" capture="environment" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} />
+            <div className="flex flex-col items-center justify-center py-6 px-4 bg-zinc-900 text-white rounded-2xl group-hover:bg-zinc-800 transition-all active:scale-95 shadow-lg relative overflow-hidden h-full">
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <Camera className="w-7 h-7 mb-2" />
                 <span className="font-semibold">Open Camera</span>
             </div>
         </label>
         
-        <label className="flex-1 cursor-pointer group">
-            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            <div className="flex flex-col items-center justify-center py-6 px-4 bg-zinc-100 text-zinc-900 rounded-2xl hover:bg-zinc-200 transition-all active:scale-95">
+        <label className="flex-1 group relative block">
+            <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} />
+            <div className="flex flex-col items-center justify-center py-6 px-4 bg-zinc-100 text-zinc-900 rounded-2xl group-hover:bg-zinc-200 transition-all active:scale-95 h-full">
                 <ImageIcon className="w-7 h-7 mb-2" />
                 <span className="font-semibold">Upload Photo</span>
             </div>

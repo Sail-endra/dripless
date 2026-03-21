@@ -135,6 +135,7 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
         }
       })
     );
+
     // ── Step 4: DALL-E 3 — generate outfit flat lay image ──
     const dallePrompt = `A fashion flat lay photograph on a clean white background with soft editorial lighting, showing these 4 clothing items arranged neatly together as a complete outfit:
 1. ${clothingDetails.color} ${clothingDetails.itemType} (${clothingDetails.style} style)
