@@ -135,11 +135,33 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
         }
       })
     );
+    // ── Step 4: DALL-E 3 — generate outfit flat lay image ──
+    const dallePrompt = `A fashion flat lay photograph on a clean white background with soft editorial lighting, showing these 4 clothing items arranged neatly together as a complete outfit:
+1. ${clothingDetails.color} ${clothingDetails.itemType} (${clothingDetails.style} style)
+2. ${suggestionsWithProducts[0].color} ${suggestionsWithProducts[0].item} (${suggestionsWithProducts[0].style} style)
+3. ${suggestionsWithProducts[1].color} ${suggestionsWithProducts[1].item} (${suggestionsWithProducts[1].style} style)
+4. ${suggestionsWithProducts[2].color} ${suggestionsWithProducts[2].item} (${suggestionsWithProducts[2].style} style)
+Professional product photography, top-down view, no models, no text.`;
+
+    let outfitImage = null;
+    try {
+      const dalleResponse = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: dallePrompt,
+        size: '1024x1024',
+        quality: 'standard',
+        n: 1,
+      });
+      outfitImage = dalleResponse.data[0].url;
+    } catch (dalleErr) {
+      console.error('DALL-E error:', dalleErr.message);
+    }
 
     // Return combined response
     res.json({
       analysis: clothingDetails,
       suggestions: suggestionsWithProducts,
+      outfitImage,
     });
   } catch (err) {
     console.error('Error in /api/outfit:', err);
