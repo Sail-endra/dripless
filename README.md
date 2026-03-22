@@ -1,20 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This repo contains two app stacks:
+
+- the newer Vite UI in `client/` with the Express API in `server/`
+- an older Next.js app in the repo root
 
 ## Getting Started
 
-First, run the development server:
+To run the latest UI from the repo root:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This starts:
+
+- the latest Vite UI, usually at `http://localhost:5173`
+- the Express API in `server/`
+
+If this is your first run on a Mac, install dependencies first:
+
+```bash
+npm run install:all
+```
+
+To run the older Next.js app instead:
+
+```bash
+npm run dev:next
+```
+
+That older app runs at `http://localhost:3000`.
+
+## Run The Whole Project Locally
+
+From the repo root on macOS:
+
+```bash
+npm run install:all
+npm run dev:all
+```
+
+This starts:
+
+- the root Next.js app on `http://localhost:3000`
+- the Vite client in `client/`
+- the Express server in `server/`
+
+If you only want the latest UI, `npm run dev` from the repo root is enough.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

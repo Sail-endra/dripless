@@ -9,15 +9,20 @@ export async function POST(req: Request) {
   });
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, gender, season } = await req.json();
 
     if (!imageBase64) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
     if (!process.env.OPENAI_API_KEY) {
-       console.warn('Missing OPENAI_API_KEY');
+      return NextResponse.json(
+        { error: 'Missing OPENAI_API_KEY. Add it to your .env file and restart the app.' },
+        { status: 500 }
+      );
     }
+
+    const genderPhrase = gender === 'men' ? "men's" : gender === 'women' ? "women's" : 'unisex';
 
     // STEP 1: Identify clothing item using GPT-4o Vision
     const visionResponse = await openai.chat.completions.create({
@@ -29,12 +34,13 @@ export async function POST(req: Request) {
           content: [
             {
               type: "text",
-              text: `Identify this clothing item. Return JSON only in this exact format, with no extra markdown:
+              text: `Analyze this clothing image and identify its details. Return JSON only:
 {
-  "item_type": "oversized hoodie",
-  "color": "navy blue",
-  "style": "casual streetwear",
-  "material_guess": "cotton"
+  "item_type": "string (e.g. oversized hoodie)",
+  "color": "string (e.g. navy blue)",
+  "style": "string (e.g. casual streetwear)",
+  "brand": "string (identify if possible, otherwise 'Unknown')",
+  "material_guess": "string"
 }`
             },
             {
@@ -58,8 +64,12 @@ export async function POST(req: Request) {
       response_format: { type: "json_object" },
       messages: [
         {
+          role: "system",
+          content: `You are a professional fashion stylist. Given a clothing item, suggest exactly 3 complementary pieces for a ${genderPhrase} outfit appropriate for ${season} season. Respond only with JSON.`
+        },
+        {
           role: "user",
-          content: `Given a [${itemDescription}, ${identifiedItem.style} style], suggest exactly 3 complementary pieces to complete the outfit. Return JSON only:
+          content: `I have a ${itemDescription} in ${identifiedItem.style} style. Suggest pieces to complete the outfit:
 {
   "pieces": [
     {"item": "white straight leg jeans", "color": "white", "reason": "contrast"},
@@ -72,21 +82,24 @@ export async function POST(req: Request) {
     });
 
     const outfitResultText = outfitResponse.choices[0]?.message?.content || '{"pieces":[]}';
-    const suggestedOutfit = JSON.parse(outfitResultText);
-    const suggestedPieces: { item: string, color: string, reason: string }[] = suggestedOutfit.pieces || [];
+    const suggestedOutfitResult = JSON.parse(outfitResultText);
+    const suggestedPieces: { item: string, color: string, reason: string }[] = suggestedOutfitResult.pieces || [];
 
     // STEP 3 & 4 in parallel: SerpApi searches and DALL-E generation
     const pieceDescriptions = suggestedPieces.map(p => `${p.color} ${p.item}`);
     
     // Start DALL-E 3 image generation
+    const dallePrompt = `Editorial fashion flat lay on a pristine white background. A ${genderPhrase} ${season} outfit featuring: a ${itemDescription} (main piece), paired with ${pieceDescriptions.join(', ')}. Studio lighting, sharp focus, high-end magazine quality. No humans.`;
+    
     const dallePromise = openai.images.generate({
       model: "dall-e-3",
-      prompt: `Fashion flat lay photo on white background: ${itemDescription}, ${pieceDescriptions.join(', ')}. Clean editorial style, soft lighting.`,
+      prompt: dallePrompt,
       n: 1,
       size: "1024x1024",
+      response_format: 'b64_json',
     }).then(res => {
-         console.log("DALL-E raw response:", JSON.stringify(res.data));
-         return res?.data?.[0]?.url || '';
+         const base64Image = res?.data?.[0]?.b64_json;
+         return base64Image ? `data:image/png;base64,${base64Image}` : '';
     }).catch(err => {
          console.error("DALL-E 3 error:", err);
          return '';
@@ -95,12 +108,13 @@ export async function POST(req: Request) {
     // Start SerpApi concurrent searches
     const serpApiPromises = suggestedPieces.map(async (piece) => {
       try {
-         const query = `${piece.color} ${piece.item} secondhand sustainable`;
+         // Improved search query for better secondhand/resale results
+         const query = `${piece.color} ${piece.item} secondhand resale pre-owned`;
          const queryParams = new URLSearchParams({
              engine: "google_shopping",
              q: query,
-             sort_by: "price_low_to_high",
-             api_key: serpApiKey
+             api_key: serpApiKey,
+             num: "5" // Get more results to filter effectively
          });
 
          const searchResponse = await fetch(`https://www.searchapi.io/api/v1/search?${queryParams}`);
@@ -111,18 +125,18 @@ export async function POST(req: Request) {
          const result = await searchResponse.json();
          const shoppingResults = result.shopping_results || [];
          
-         // Pick the best item, preferably sustainable
          let finalProduct = null;
          for (const product of shoppingResults) {
              const title = (product.title || '').toLowerCase();
              const source = (product.source || '').toLowerCase();
              
-             // Simple fast fashion filter
+             // Check for fast fashion brands to exclude
              const isFastFashion = brandsData.fast_fashion.some(b => 
                  title.includes(b.toLowerCase()) || source.includes(b.toLowerCase())
              );
-             if (isFastFashion) continue; // skip this product entirely
+             if (isFastFashion) continue;
              
+             // prioritize sustainable brands
              const isSustainable = brandsData.sustainable.some(b => 
                  title.includes(b.toLowerCase()) || source.includes(b.toLowerCase())
              );
@@ -137,7 +151,6 @@ export async function POST(req: Request) {
                      isSustainable: isSustainable
                  };
              } else if (isSustainable && !finalProduct.isSustainable) {
-                 // Upgrade to a sustainable option if we find one
                  finalProduct = {
                      title: product.title,
                      price: product.price,
@@ -146,12 +159,11 @@ export async function POST(req: Request) {
                      source: product.source,
                      isSustainable: true
                  };
-                 break;
+                 break; // Found a sustainable one, we're good
              }
          }
 
          if (!finalProduct && shoppingResults.length > 0) {
-             // Fallback
              finalProduct = {
                  title: shoppingResults[0].title,
                  price: shoppingResults[0].price,
@@ -187,8 +199,19 @@ export async function POST(req: Request) {
       outfitImageUrl: dalleImageUrl
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Route Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const status = typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined;
+    const messageText = typeof error === 'object' && error !== null && 'message' in error ? error.message : undefined;
+    const message =
+      status === 401
+        ? 'OpenAI API key is invalid or missing access.'
+        : status === 429
+          ? 'OpenAI rate limit or quota reached. Please try again later.'
+          : typeof messageText === 'string'
+            ? messageText
+            : 'Internal Server Error';
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import LandingPage from '../components/LandingPage';
 import CameraCapture from '../components/CameraCapture';
 import LoadingState from '../components/LoadingState';
 import OutfitResults from '../components/OutfitResults';
 
-type AppState = 'capture' | 'loading' | 'results' | 'error';
+type AppState = 'landing' | 'capture' | 'loading' | 'results' | 'error';
 
 export default function Home() {
-  const [appState, setAppState] = useState<AppState>('capture');
-  const [resultData, setResultData] = useState<any>(null);
+  const [appState, setAppState] = useState<AppState>('landing');
+  const [resultData, setResultData] = useState<null | {
+      identifiedItem: any;
+      suggestedOutfit: any[];
+      outfitImageUrl: string;
+  }>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleImageCapture = async (base64String: string) => {
+  const handleImageCapture = async (base64String: string, options: { gender: string; season: string }) => {
     setAppState('loading');
     setErrorMessage('');
     
@@ -22,7 +27,11 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ imageBase64: base64String }),
+        body: JSON.stringify({ 
+            imageBase64: base64String,
+            gender: options.gender,
+            season: options.season
+        }),
       });
 
       const data = await response.json();
@@ -36,7 +45,7 @@ export default function Home() {
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || 'Something went wrong. Please try again.');
-      setAppState('capture');
+      setAppState('error');
     }
   };
 
@@ -46,43 +55,50 @@ export default function Home() {
     setErrorMessage('');
   };
 
+  const handleGoToLanding = () => {
+    setAppState('landing');
+    setResultData(null);
+    setErrorMessage('');
+  };
+
   return (
-    <main className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
-      <div className="max-w-screen-md mx-auto">
-        {/* Navigation / Header */}
-        <header className="p-4 flex items-center justify-between border-b border-zinc-100">
-            <div className="font-bold text-xl tracking-tighter cursor-pointer" onClick={handleReset}>
-               OUTFIT<span className="text-zinc-400">Gen</span>
-            </div>
-        </header>
+    <main className="min-h-screen bg-white text-black selection:bg-grey-light">
+      {appState === 'landing' && (
+        <LandingPage onStart={() => setAppState('capture')} />
+      )}
 
-        {/* Dynamic Content Area */}
-        <div className="py-8">
-            {appState === 'capture' && (
-                <>
-                    <CameraCapture onImageCapture={handleImageCapture} />
-                    {errorMessage && (
-                        <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl text-center max-w-md mx-auto font-medium">
-                            {errorMessage}
-                        </div>
-                    )}
-                </>
-            )}
+      {appState === 'capture' && (
+        <CameraCapture 
+            onImageCapture={handleImageCapture} 
+            onBack={handleGoToLanding}
+        />
+      )}
 
-            {appState === 'loading' && (
-                <LoadingState />
-            )}
+      {appState === 'loading' && (
+        <LoadingState />
+      )}
 
-            {appState === 'results' && resultData && (
-                <OutfitResults 
-                    outfitImageUrl={resultData.outfitImageUrl}
-                    identifiedItem={resultData.identifiedItem}
-                    suggestedOutfit={resultData.suggestedOutfit}
-                    onReset={handleReset}
-                />
-            )}
+      {appState === 'results' && resultData && (
+        <OutfitResults 
+            outfitImageUrl={resultData.outfitImageUrl}
+            identifiedItem={resultData.identifiedItem}
+            suggestedOutfit={resultData.suggestedOutfit}
+            onReset={handleReset}
+        />
+      )}
+
+      {appState === 'error' && (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-beige px-6 text-center">
+            <h2 className="font-display text-4xl italic mb-4">Something went wrong</h2>
+            <p className="font-sans text-sm text-grey-dark mb-10 max-w-sm">{errorMessage}</p>
+            <button 
+                onClick={handleReset}
+                className="btn-zara btn-zara-dark"
+            >
+                Try Again
+            </button>
         </div>
-      </div>
+      )}
     </main>
   );
 }
