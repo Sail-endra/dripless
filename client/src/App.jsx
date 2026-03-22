@@ -4,7 +4,7 @@ import './App.css'
 const API_URL = 'http://localhost:3001/api/outfit'
 
 function App() {
-  const [screen, setScreen] = useState('capture') // 'capture' | 'loading' | 'results' | 'error'
+  const [screen, setScreen] = useState('landing') // 'landing' | 'capture' | 'loading' | 'results' | 'error'
   const [preview, setPreview] = useState(null)
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
@@ -20,7 +20,6 @@ function App() {
       return
     }
 
-    // Read file as base64
     const reader = new FileReader()
     reader.onload = async () => {
       const base64 = reader.result
@@ -55,78 +54,176 @@ function App() {
     reader.readAsDataURL(file)
   }
 
-  const reset = () => {
+  const resetToCapture = () => {
     setScreen('capture')
     setPreview(null)
     setResults(null)
     setError('')
+    setImgError(false)
   }
 
-  // ── Screen 1: Capture ──
+  const goToLanding = () => {
+    setScreen('landing')
+    setPreview(null)
+    setResults(null)
+    setError('')
+    setImgError(false)
+  }
+
+  // ── Landing ──
+  if (screen === 'landing') {
+    return (
+      <div className="app app-landing">
+        <section className="landing-hero">
+          <h1 className="landing-hero-title">
+            <span>DRESS</span>
+            <span>DIFFERENT.</span>
+          </h1>
+          <p className="landing-hero-tagline">
+            AI-powered outfit builder. Secondhand only. Zero guilt.
+          </p>
+          <button type="button" className="btn-hero" onClick={() => setScreen('capture')}>
+            Scan Your Clothes
+          </button>
+          <p className="landing-hero-powered">Powered by GPT-4o</p>
+        </section>
+
+        <section className="landing-stats">
+          <div className="landing-stats-inner">
+            <div className="landing-stats-grid">
+              <div>
+                <p className="landing-stat-num">92M tonnes</p>
+                <p className="landing-stat-label">textile waste yearly</p>
+              </div>
+              <div>
+                <p className="landing-stat-num">75%</p>
+                <p className="landing-stat-label">want to shop sustainably</p>
+              </div>
+              <div>
+                <p className="landing-stat-num">35%</p>
+                <p className="landing-stat-label">actually do</p>
+              </div>
+            </div>
+            <p className="landing-stats-tagline">Dripless closes that gap.</p>
+          </div>
+        </section>
+
+        <section className="landing-how">
+          <span className="landing-how-watermark" aria-hidden="true">
+            01
+          </span>
+          <div className="landing-how-inner">
+            <h2>Point. Scan. Style.</h2>
+            <div className="landing-cards">
+              <div className="landing-card">
+                <h3>Scan</h3>
+                <p>Point your camera at any clothing item you own or are about to buy</p>
+              </div>
+              <div className="landing-card">
+                <h3>Style</h3>
+                <p>AI builds a complete outfit using color theory and fashion logic</p>
+              </div>
+              <div className="landing-card">
+                <h3>Shop</h3>
+                <p>Every suggested piece is sourced from secondhand marketplaces. Always.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-quote">
+          <div className="landing-quote-inner">
+            <blockquote>
+              Fast fashion is the world&apos;s second most polluting industry. You didn&apos;t cause it. But you
+              can opt out.
+            </blockquote>
+            <p className="landing-quote-source">— United Nations Environment Programme</p>
+            <p className="landing-quote-follow">
+              Every outfit Dripless builds is secondhand. Every scan is a vote against waste.
+            </p>
+          </div>
+        </section>
+
+        <section className="landing-cta">
+          <h2>Your wardrobe. Reimagined.</h2>
+          <p>Scan anything. Style everything. Spend less.</p>
+          <button type="button" className="btn-cta" onClick={() => setScreen('capture')}>
+            Start Styling
+          </button>
+        </section>
+      </div>
+    )
+  }
+
+  // ── Capture ──
   if (screen === 'capture') {
     return (
-      <div className="app">
+      <div className="app app-capture">
+        <div className="capture-top">
+          <button type="button" className="btn-back" onClick={goToLanding}>
+            ← Back
+          </button>
+        </div>
         <div className="capture-screen">
-          <div className="capture-icon">📸</div>
-          <h1>Scan Your Item</h1>
-          <p className="subtitle">
-            Upload a photo of a clothing piece and we'll style a sustainable outfit around it.
-          </p>
-          <div className="capture-buttons">
-            <label className="btn btn-primary">
-              <input type="file" accept="image/*" capture="environment" onChange={handleCapture} hidden />
-              📷 Open Camera
-            </label>
-            <label className="btn btn-secondary">
-              <input type="file" accept="image/*" onChange={handleCapture} hidden />
-              🖼️ Upload Photo
-            </label>
+          <div className="capture-upload-zone">
+            <h2>Scan Your Item</h2>
+            <p className="subtitle">Upload a photo of any clothing piece</p>
+            <div className="capture-buttons">
+              <label className="btn">
+                <input type="file" accept="image/*" capture="environment" onChange={handleCapture} hidden />
+                Open Camera
+              </label>
+              <label className="btn">
+                <input type="file" accept="image/*" onChange={handleCapture} hidden />
+                Upload Photo
+              </label>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
-  // ── Screen 2: Loading ──
+  // ── Loading ──
   if (screen === 'loading') {
     return (
-      <div className="app">
+      <div className="app app-loading">
         <div className="loading-screen">
           {preview && <img src={preview} alt="Your item" className="loading-preview" />}
-          <div className="spinner"></div>
-          <h2>Analyzing your item...</h2>
-          <p className="subtitle">Finding the perfect outfit and sustainable shopping options</p>
+          <div className="spinner" />
+          <h2>Building your outfit...</h2>
+          <p className="subtitle">Finding secondhand pieces that complete your look</p>
         </div>
       </div>
     )
   }
 
-  // ── Error Screen ──
+  // ── Error ──
   if (screen === 'error') {
     return (
-      <div className="app">
+      <div className="app app-error">
         <div className="error-screen">
           <div className="error-icon">⚠️</div>
           <h2>Oops, something went wrong</h2>
           <p className="subtitle">{error}</p>
-          <button className="btn btn-primary" onClick={reset}>Try Again</button>
+          <button type="button" className="btn-retry" onClick={resetToCapture}>
+            Try Again
+          </button>
         </div>
       </div>
     )
   }
 
-  // ── Screen 3: Results ──
+  // ── Results ──
   const { analysis, suggestions, outfitImage } = results || {}
-  console.log('outfitImage URL:', outfitImage)
 
   return (
-    <div className="app">
+    <div className="app app-results">
       <div className="results-screen">
-        <button className="btn btn-back" onClick={reset}>← Scan Another</button>
+        <button type="button" className="btn-back" onClick={resetToCapture}>
+          ← Scan Another
+        </button>
 
-        <h1>Your Outfit</h1>
-
-        {/* DALL-E generated outfit image */}
         {outfitImage && !imgError && (
           <div className="outfit-image-wrapper">
             <img
@@ -144,21 +241,19 @@ function App() {
           </div>
         )}
 
-        {/* Scanned item analysis */}
         {analysis && (
           <div className="analysis-card">
             <h3>Scanned Item</h3>
             <div className="analysis-details">
-              <span className="tag">{analysis.brand}</span>
-              <span className="tag">{analysis.itemType}</span>
-              <span className="tag">{analysis.color}</span>
-              <span className="tag">{analysis.style}</span>
+              <span className="tag-pill">{analysis.brand}</span>
+              <span className="tag-pill">{analysis.itemType}</span>
+              <span className="tag-pill">{analysis.color}</span>
+              <span className="tag-pill">{analysis.style}</span>
             </div>
           </div>
         )}
 
-        {/* Suggestions with product cards */}
-        <h2>Suggested Pieces</h2>
+        <h2 className="suggested-heading">Suggested Pieces</h2>
         <div className="suggestions-grid">
           {suggestions?.map((s, i) => (
             <div key={i} className="suggestion-card">
@@ -175,9 +270,7 @@ function App() {
                   <p className="products-label">Shop Secondhand</p>
                   {s.products.map((p, j) => (
                     <a key={j} href={p.link} target="_blank" rel="noreferrer" className="product-card">
-                      {p.thumbnail && (
-                        <img src={p.thumbnail} alt={p.title} className="product-thumb" />
-                      )}
+                      {p.thumbnail && <img src={p.thumbnail} alt={p.title} className="product-thumb" />}
                       <div className="product-info">
                         <span className="product-title">{p.title}</span>
                         <span className="product-price">{p.price}</span>
