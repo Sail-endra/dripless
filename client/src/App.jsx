@@ -1,14 +1,69 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+import leafCircuit from './assets/leaf-circuit.jpg'
 
 const API_URL = 'http://localhost:3001/api/outfit'
 
+const FAST_FASHION_FACTS = [
+  'The fashion industry produces 10% of global carbon emissions',
+  'A single polyester shirt takes 200 years to decompose',
+  'Only 1% of clothing is recycled into new clothing',
+  'The average person buys 60% more clothes than 15 years ago',
+  'Fast fashion produces 20% of global wastewater',
+  '85% of textiles end up in landfills each year',
+  'It takes 2,700 liters of water to make one cotton t-shirt',
+  'Washing synthetic clothes releases 500,000 tons of microplastics yearly',
+]
+
 function App() {
-  const [screen, setScreen] = useState('landing') // 'landing' | 'capture' | 'loading' | 'results' | 'error'
+  const [screen, setScreen] = useState('landing')
   const [preview, setPreview] = useState(null)
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
   const [imgError, setImgError] = useState(false)
+  const [gender, setGender] = useState('unisex')
+  const [season, setSeason] = useState('spring')
+  const [loadingFactIndex, setLoadingFactIndex] = useState(0)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible')
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+
+    const connect = () => {
+      const elements = document.querySelectorAll(
+        '.reveal, .reveal-left, .reveal-right, .reveal-up, .reveal-fade'
+      )
+      elements.forEach((el) => observer.observe(el))
+    }
+
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(connect)
+    })
+
+    return () => {
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [screen])
+
+  const outfitImage = results?.outfitImage
+
+  useEffect(() => {
+    if (screen !== 'loading') return undefined
+    setLoadingFactIndex(0)
+    const id = setInterval(() => {
+      setLoadingFactIndex((i) => (i + 1) % FAST_FASHION_FACTS.length)
+    }, 3000)
+    return () => clearInterval(id)
+  }, [screen])
 
   const handleCapture = async (e) => {
     const file = e.target.files?.[0]
@@ -30,7 +85,7 @@ function App() {
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64 }),
+          body: JSON.stringify({ image: base64, gender, season }),
         })
 
         if (!res.ok) {
@@ -70,84 +125,215 @@ function App() {
     setImgError(false)
   }
 
-  // ── Landing ──
   if (screen === 'landing') {
     return (
-      <div className="app app-landing">
-        <section className="landing-hero">
-          <h1 className="landing-hero-title">
-            <span>DRESS</span>
-            <span>DIFFERENT.</span>
-          </h1>
-          <p className="landing-hero-tagline">
-            AI-powered outfit builder. Secondhand only. Zero guilt.
-          </p>
-          <button type="button" className="btn-hero" onClick={() => setScreen('capture')}>
-            Scan Your Clothes
-          </button>
-          <p className="landing-hero-powered">Powered by GPT-4o</p>
-        </section>
-
-        <section className="landing-stats">
-          <div className="landing-stats-inner">
-            <div className="landing-stats-grid">
-              <div>
-                <p className="landing-stat-num">92M tonnes</p>
-                <p className="landing-stat-label">textile waste yearly</p>
+      <div key={screen} className="app app-landing screen">
+        <section className="z-hero">
+          <div
+            style={{
+              position: 'relative',
+              height: '100vh',
+              overflow: 'hidden',
+              width: '100%',
+            }}
+          >
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 0,
+              }}
+            >
+              <source src="/fashion-video.mp4" type="video/mp4" />
+            </video>
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background:
+                  'linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.3) 100%)',
+                zIndex: 1,
+              }}
+            />
+            <div
+              className="z-hero-content-grid"
+              style={{
+                position: 'relative',
+                zIndex: 2,
+                height: '100%',
+                minHeight: '100%',
+              }}
+            >
+              <div className="z-hero-left" style={{ position: 'relative', zIndex: 2 }}>
+                <p
+                  className="z-hero-kicker"
+                  style={{ color: 'rgba(255,255,255,0.5)' }}
+                >
+                  AI-powered fashion
+                </p>
+                <h1 className="z-hero-title">
+                  <span style={{ color: '#FFFFFF' }}>DRESS</span>
+                  <span style={{ color: '#FFFFFF', fontStyle: 'italic' }}>DIFFERENT.</span>
+                </h1>
+                <p className="z-hero-sub" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Build complete outfits around what you own. Every suggestion is secondhand.
+                </p>
+                <button
+                  type="button"
+                  className="btn-zara btn-zara--light btn-hero-cta"
+                  onClick={() => setScreen('capture')}
+                >
+                  Scan Your Clothes
+                </button>
+                <p className="z-hero-scroll" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Scroll to explore
+                </p>
               </div>
-              <div>
-                <p className="landing-stat-num">75%</p>
-                <p className="landing-stat-label">want to shop sustainably</p>
-              </div>
-              <div>
-                <p className="landing-stat-num">35%</p>
-                <p className="landing-stat-label">actually do</p>
-              </div>
+              <div
+                className="z-hero-right"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  height: '100%',
+                  zIndex: 2,
+                }}
+                aria-hidden="true"
+              />
             </div>
-            <p className="landing-stats-tagline">Dripless closes that gap.</p>
+            <p
+              className="z-hero-powered"
+              style={{
+                position: 'absolute',
+                left: '80px',
+                bottom: '40px',
+                zIndex: 5,
+                color: 'rgba(255,255,255,0.35)',
+                margin: 0,
+              }}
+            >
+              Powered by GPT-4o
+            </p>
+            <img
+              src={leafCircuit}
+              alt="Dripless"
+              style={{
+                position: 'absolute',
+                bottom: '40px',
+                right: '60px',
+                height: '180px',
+                width: 'auto',
+                objectFit: 'contain',
+                mixBlendMode: 'screen',
+                opacity: 0.85,
+                zIndex: 5,
+              }}
+            />
           </div>
         </section>
 
-        <section className="landing-how">
-          <span className="landing-how-watermark" aria-hidden="true">
-            01
-          </span>
-          <div className="landing-how-inner">
-            <h2>Point. Scan. Style.</h2>
-            <div className="landing-cards">
-              <div className="landing-card">
-                <h3>Scan</h3>
-                <p>Point your camera at any clothing item you own or are about to buy</p>
+        <section className="z-stats">
+          <div className="z-stats-inner">
+            <p className="z-stats-section-label reveal">By the numbers</p>
+            <div className="z-stats-grid">
+              <div className="z-stat">
+                <p className="z-stat-num reveal-up" style={{ transitionDelay: '0.1s' }}>
+                  92M
+                </p>
+                <p className="z-stat-label reveal" style={{ transitionDelay: '0.1s' }}>
+                  Tonnes of textile waste yearly
+                </p>
               </div>
-              <div className="landing-card">
-                <h3>Style</h3>
-                <p>AI builds a complete outfit using color theory and fashion logic</p>
+              <div className="z-stat">
+                <p className="z-stat-num reveal-up" style={{ transitionDelay: '0.2s' }}>
+                  75%
+                </p>
+                <p className="z-stat-label reveal" style={{ transitionDelay: '0.2s' }}>
+                  Want to shop sustainably
+                </p>
               </div>
-              <div className="landing-card">
-                <h3>Shop</h3>
-                <p>Every suggested piece is sourced from secondhand marketplaces. Always.</p>
+              <div className="z-stat">
+                <p className="z-stat-num reveal-up" style={{ transitionDelay: '0.3s' }}>
+                  35%
+                </p>
+                <p className="z-stat-label reveal" style={{ transitionDelay: '0.3s' }}>
+                  Actually do
+                </p>
               </div>
+            </div>
+            <hr className="z-stats-divider" />
+            <p className="z-stats-tagline reveal">Dripless closes that gap.</p>
+          </div>
+        </section>
+
+        <section className="z-how">
+          <div className="z-how-intro">
+            <p className="z-how-kicker reveal">How it works</p>
+            <h2 className="z-how-headline reveal">Three steps. One outfit.</h2>
+          </div>
+          <div className="z-how-cards">
+            <div className="z-how-card reveal reveal-delay-1">
+              <p className="z-how-card-num">01</p>
+              <h3>Scan</h3>
+              <p>Point your camera at any clothing item you own or are about to buy</p>
+            </div>
+            <div className="z-how-card reveal reveal-delay-2">
+              <p className="z-how-card-num">02</p>
+              <h3>Style</h3>
+              <p>AI builds a complete outfit using color theory and fashion logic</p>
+            </div>
+            <div className="z-how-card reveal reveal-delay-3">
+              <p className="z-how-card-num">03</p>
+              <h3>Shop</h3>
+              <p>Every suggested piece is sourced from secondhand marketplaces. Always.</p>
             </div>
           </div>
         </section>
 
-        <section className="landing-quote">
-          <div className="landing-quote-inner">
-            <blockquote>
+        <section className="z-quote">
+          <div className="z-quote-inner">
+            <blockquote className="reveal">
               Fast fashion is the world&apos;s second most polluting industry. You didn&apos;t cause it. But you
               can opt out.
             </blockquote>
-            <p className="landing-quote-source">— United Nations Environment Programme</p>
-            <p className="landing-quote-follow">
+            <div className="z-quote-line reveal-fade" aria-hidden="true" />
+            <p className="z-quote-source reveal">United Nations Environment Programme</p>
+            <p className="z-quote-follow reveal">
               Every outfit Dripless builds is secondhand. Every scan is a vote against waste.
             </p>
           </div>
         </section>
 
-        <section className="landing-cta">
-          <h2>Your wardrobe. Reimagined.</h2>
-          <p>Scan anything. Style everything. Spend less.</p>
-          <button type="button" className="btn-cta" onClick={() => setScreen('capture')}>
+        <section className="z-cta">
+          <h2 className="z-cta-title">
+            <span className="reveal">Your wardrobe.</span>
+            <span className="reveal" style={{ transitionDelay: '0.12s' }}>
+              Reimagined.
+            </span>
+          </h2>
+          <p className="z-cta-sub reveal" style={{ transitionDelay: '0.2s' }}>
+            Scan anything. Style everything. Spend less.
+          </p>
+          <button
+            type="button"
+            className="btn-zara btn-zara--red reveal"
+            style={{ transitionDelay: '0.28s' }}
+            onClick={() => setScreen('capture')}
+          >
             Start Styling
           </button>
         </section>
@@ -155,58 +341,105 @@ function App() {
     )
   }
 
-  // ── Capture ──
   if (screen === 'capture') {
     return (
-      <div className="app app-capture">
-        <div className="capture-top">
-          <button type="button" className="btn-back" onClick={goToLanding}>
+      <div key={screen} className="app app-capture screen">
+        <nav className="capture-nav">
+          <p className="capture-nav-brand">Dripless</p>
+          <button type="button" className="btn-nav" onClick={goToLanding}>
             ← Back
           </button>
-        </div>
-        <div className="capture-screen">
-          <div className="capture-upload-zone">
-            <h2>Scan Your Item</h2>
-            <p className="subtitle">Upload a photo of any clothing piece</p>
-            <div className="capture-buttons">
-              <label className="btn">
-                <input type="file" accept="image/*" capture="environment" onChange={handleCapture} hidden />
+        </nav>
+        <main className="capture-main">
+          <div className="capture-zone-wrap">
+            <input
+              id="capture-gallery"
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleCapture}
+            />
+            <label htmlFor="capture-gallery" className="capture-zone reveal-up reveal-delay-1">
+              <span className="capture-zone-title">Drop a photo to begin</span>
+              <span className="capture-zone-hint">or click to upload</span>
+            </label>
+            <div className="capture-toggles" aria-label="Outfit preferences">
+              <div className="capture-toggle-row reveal reveal-delay-2">
+                {(['men', 'women', 'unisex']).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={`toggle-btn${gender === g ? ' toggle-btn--selected' : ''}`}
+                    onClick={() => setGender(g)}
+                  >
+                    {g === 'men' ? 'Men' : g === 'women' ? 'Women' : 'Unisex'}
+                  </button>
+                ))}
+              </div>
+              <div className="capture-toggle-row reveal reveal-delay-3">
+                {([
+                  ['spring', 'Spring'],
+                  ['summer', 'Summer'],
+                  ['autumn', 'Autumn'],
+                  ['winter', 'Winter'],
+                ]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`toggle-btn${season === value ? ' toggle-btn--selected' : ''}`}
+                    onClick={() => setSeason(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="capture-actions reveal reveal-delay-4">
+              <label htmlFor="capture-camera" className="btn-zara btn-zara--dark">
                 Open Camera
+                <input
+                  id="capture-camera"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  hidden
+                  onChange={handleCapture}
+                />
               </label>
-              <label className="btn">
-                <input type="file" accept="image/*" onChange={handleCapture} hidden />
+              <label htmlFor="capture-gallery" className="btn-zara btn-zara--light">
                 Upload Photo
               </label>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     )
   }
 
-  // ── Loading ──
   if (screen === 'loading') {
     return (
-      <div className="app app-loading">
-        <div className="loading-screen">
-          {preview && <img src={preview} alt="Your item" className="loading-preview" />}
-          <div className="spinner" />
+      <div key={screen} className="app app-loading screen">
+        <div className="loading-inner">
+          {preview && <img src={preview} alt="Your clothing item" className="loading-preview" />}
           <h2>Building your outfit...</h2>
-          <p className="subtitle">Finding secondhand pieces that complete your look</p>
+          <p key={loadingFactIndex} className="loading-fact">
+            {FAST_FASHION_FACTS[loadingFactIndex]}
+          </p>
+        </div>
+        <div className="loading-bar-track" aria-hidden="true">
+          <div className="loading-bar-fill" />
         </div>
       </div>
     )
   }
 
-  // ── Error ──
   if (screen === 'error') {
     return (
-      <div className="app app-error">
-        <div className="error-screen">
-          <div className="error-icon">⚠️</div>
-          <h2>Oops, something went wrong</h2>
-          <p className="subtitle">{error}</p>
-          <button type="button" className="btn-retry" onClick={resetToCapture}>
+      <div key={screen} className="app app-error screen">
+        <div className="error-inner">
+          <h2>Something went wrong</h2>
+          <p>{error}</p>
+          <button type="button" className="btn-zara btn-zara--dark" onClick={resetToCapture}>
             Try Again
           </button>
         </div>
@@ -214,62 +447,67 @@ function App() {
     )
   }
 
-  // ── Results ──
-  const { analysis, suggestions, outfitImage } = results || {}
+  const { analysis, suggestions } = results || {}
 
   return (
-    <div className="app app-results">
-      <div className="results-screen">
-        <button type="button" className="btn-back" onClick={resetToCapture}>
+    <div key={screen} className="app app-results screen">
+      <nav className="results-nav">
+        <span className="capture-nav-brand">Dripless</span>
+        <button type="button" className="btn-nav" onClick={resetToCapture}>
           ← Scan Another
         </button>
+      </nav>
 
+      <div className="results-screen">
         {outfitImage && !imgError && (
-          <div className="outfit-image-wrapper">
+          <div className="results-outfit-wrap">
             <img
               src={outfitImage}
-              alt="Complete outfit"
-              className="outfit-image"
-              crossOrigin="anonymous"
+              alt="Generated outfit"
+              className="results-outfit-img reveal-fade"
               onError={() => setImgError(true)}
             />
           </div>
         )}
-        {imgError && (
-          <div className="outfit-image-fallback">
-            <p>Outfit preview unavailable</p>
-          </div>
-        )}
+        {imgError && <div className="outfit-fallback">Outfit preview unavailable</div>}
+
+        <hr className="results-rule" />
 
         {analysis && (
-          <div className="analysis-card">
-            <h3>Scanned Item</h3>
-            <div className="analysis-details">
-              <span className="tag-pill">{analysis.brand}</span>
-              <span className="tag-pill">{analysis.itemType}</span>
-              <span className="tag-pill">{analysis.color}</span>
-              <span className="tag-pill">{analysis.style}</span>
+          <>
+            <p className="results-kicker reveal reveal-delay-1">Your Outfit</p>
+            <div className="analysis-tags">
+              <span className="tag-pill reveal reveal-delay-2">{analysis.brand}</span>
+              <span className="tag-pill reveal reveal-delay-2">{analysis.itemType}</span>
+              <span className="tag-pill reveal reveal-delay-2">{analysis.color}</span>
+              <span className="tag-pill reveal reveal-delay-2">{analysis.style}</span>
             </div>
-          </div>
+          </>
         )}
 
-        <h2 className="suggested-heading">Suggested Pieces</h2>
-        <div className="suggestions-grid">
+        <p className="results-section-kicker reveal reveal-delay-1">Suggested Pieces</p>
+        <div className="suggestions-row">
           {suggestions?.map((s, i) => (
-            <div key={i} className="suggestion-card">
-              <div className="suggestion-header">
-                <h3>{s.item}</h3>
-                <div className="suggestion-meta">
-                  <span className="tag">{s.color}</span>
-                  <span className="tag">{s.style}</span>
-                </div>
-              </div>
-
+            <article
+              key={i}
+              className={`suggestion-card reveal reveal-delay-${Math.min(i + 1, 3)}`}
+            >
+              <h3>{s.item}</h3>
+              <p className="suggestion-meta">
+                {s.color}
+                {s.style ? ` · ${s.style}` : ''}
+              </p>
               {s.products && s.products.length > 0 && (
-                <div className="products-list">
-                  <p className="products-label">Shop Secondhand</p>
+                <>
+                  <p className="shop-label">Shop Secondhand</p>
                   {s.products.map((p, j) => (
-                    <a key={j} href={p.link} target="_blank" rel="noreferrer" className="product-card">
+                    <a
+                      key={j}
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="product-card reveal reveal-delay-1"
+                    >
                       {p.thumbnail && <img src={p.thumbnail} alt={p.title} className="product-thumb" />}
                       <div className="product-info">
                         <span className="product-title">{p.title}</span>
@@ -277,9 +515,9 @@ function App() {
                       </div>
                     </a>
                   ))}
-                </div>
+                </>
               )}
-            </div>
+            </article>
           ))}
         </div>
       </div>

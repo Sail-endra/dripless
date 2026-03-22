@@ -24,11 +24,19 @@ app.get('/api/health', (req, res) => {
 // POST /api/outfit — Analyze clothing image and suggest complementary pieces
 app.post('/api/outfit', async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image, gender: genderRaw, season: seasonRaw } = req.body;
 
     if (!image) {
       return res.status(400).json({ error: 'Missing "image" field in request body' });
     }
+
+    const gender =
+      genderRaw === 'men' || genderRaw === 'women' || genderRaw === 'unisex' ? genderRaw : 'unisex';
+    const seasonOpt = ['spring', 'summer', 'autumn', 'winter'];
+    const season = seasonOpt.includes(seasonRaw) ? seasonRaw : 'spring';
+
+    const genderPhrase =
+      gender === 'men' ? "men's" : gender === 'women' ? "women's" : 'unisex';
 
     // ── Step 1: GPT-4o Vision — extract clothing details from the image ──
     const visionResponse = await openai.chat.completions.create({
@@ -86,7 +94,9 @@ Respond ONLY with the JSON object, no extra text.`,
         },
         {
           role: 'user',
-          content: `I have the following clothing item:
+          content: `Suggest 3 complementary pieces for a ${genderPhrase} outfit. The outfit should be appropriate for ${season}.
+
+I have the following clothing item:
 ${JSON.stringify(clothingDetails, null, 2)}
 
 Suggest exactly 3 complementary clothing pieces. Each piece should be a JSON object with these keys:
