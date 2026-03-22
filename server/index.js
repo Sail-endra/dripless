@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const axios = require('axios');
 const OpenAI = require('openai');
 
 dotenv.config();
@@ -137,12 +138,7 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
     );
 
     // ── Step 4: DALL-E 3 — generate outfit flat lay image ──
-    const dallePrompt = `A fashion flat lay photograph on a clean white background with soft editorial lighting, showing these 4 clothing items arranged neatly together as a complete outfit:
-1. ${clothingDetails.color} ${clothingDetails.itemType} (${clothingDetails.style} style)
-2. ${suggestionsWithProducts[0].color} ${suggestionsWithProducts[0].item} (${suggestionsWithProducts[0].style} style)
-3. ${suggestionsWithProducts[1].color} ${suggestionsWithProducts[1].item} (${suggestionsWithProducts[1].style} style)
-4. ${suggestionsWithProducts[2].color} ${suggestionsWithProducts[2].item} (${suggestionsWithProducts[2].style} style)
-Professional product photography, top-down view, no models, no text.`;
+    const dallePrompt = `Professional fashion flat lay photograph on a pure white background. Shot from directly above. Items arranged neatly without overlapping. Items to include: a ${clothingDetails.color} ${clothingDetails.itemType}, ${suggestions[0].color} ${suggestions[0].item}, ${suggestions[1].color} ${suggestions[1].item}, ${suggestions[2].color} ${suggestions[2].item}. Each item folded or laid flat. Clean minimal style. Studio lighting. No people. No mannequins. No text.`;
 
     let outfitImage = null;
     try {
@@ -153,7 +149,10 @@ Professional product photography, top-down view, no models, no text.`;
         quality: 'standard',
         n: 1,
       });
-      outfitImage = dalleResponse.data[0].url;
+      const imageUrl = dalleResponse.data[0].url;
+      const imgResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const base64String = Buffer.from(imgResponse.data).toString('base64');
+      outfitImage = `data:image/png;base64,${base64String}`;
     } catch (dalleErr) {
       console.error('DALL-E error:', dalleErr.message);
     }
