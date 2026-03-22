@@ -138,7 +138,7 @@ Respond ONLY with a JSON array of 3 objects, no extra text.`,
     );
 
     // ── Step 4: DALL-E 3 — generate outfit flat lay image ──
-    const dallePrompt = `Professional fashion flat lay photograph on a pure white background. Shot from directly above. Items arranged neatly without overlapping. Items to include: a ${clothingDetails.color} ${clothingDetails.itemType}, ${suggestions[0].color} ${suggestions[0].item}, ${suggestions[1].color} ${suggestions[1].item}, ${suggestions[2].color} ${suggestions[2].item}. Each item folded or laid flat. Clean minimal style. Studio lighting. No people. No mannequins. No text.`;
+    const dallePrompt = `High-end fashion photography. A ${clothingDetails.style} outfit displayed on a sleek white invisible mannequin against a pure white background. The mannequin is wearing: a ${clothingDetails.color} ${clothingDetails.itemType} as the base piece, paired with ${suggestions[0].color} ${suggestions[0].item}, ${suggestions[1].color} ${suggestions[1].item}, and ${suggestions[2].color} ${suggestions[2].item}. Studio lighting, clean shadows, editorial fashion magazine quality. Full body shot showing the complete outfit. No face, no hands, invisible mannequin only. Photorealistic.`;
 
     let outfitImage = null;
     try {
